@@ -1,3 +1,4 @@
+[README.md](https://github.com/user-attachments/files/32491505/README.md)
 # Torbed
 
 discord doesn't unfurl `.onion` links. this does.
@@ -6,9 +7,9 @@ pulls og title/description/image through tor and shows a normal looking embed un
 
 ## requirements
 
-- vencord or equicord (desktop)
-- tor browser open (uses socks on `127.0.0.1:9150`, tries `9050` if that fails)
-- mac/linux for now (uses `curl`)
+- vencord or equicord (**desktop** only, needs native)
+- tor browser open (socks `127.0.0.1:9150`, falls back to `9050`)
+- `curl` / `curl.exe` on PATH (windows 10+ usually already has it)
 
 ## install
 
@@ -22,3 +23,4 @@ pulls og title/description/image through tor and shows a normal looking embed un
 - only http(s) onion urls
 - preview fetch can take a few seconds
 - open still needs tor browser (or anything that handles onions)
+- works on windows, mac, and linux
