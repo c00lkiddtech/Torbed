@@ -11,6 +11,9 @@ const ONION_HOST_RE = /^(?:[a-z0-9-]+\.)*[a-z2-7]{16,56}\.onion$/i;
 const MAX_HTML_BYTES = 512_000;
 const MAX_IMAGE_BYTES = 1_500_000;
 const FETCH_TIMEOUT_MS = 45_000;
+const IS_WIN = process.platform === "win32";
+const CURL_BIN = IS_WIN ? "curl.exe" : "curl";
+
 
 export interface OnionEmbedMeta {
     url: string;
@@ -71,7 +74,11 @@ function curlViaTor(url: string, socksPort: number, maxBytes: number): Promise<{
             url,
         ];
 
-        const child = spawn("curl", args, { stdio: ["ignore", "pipe", "pipe"] });
+        const child = spawn(CURL_BIN, args, {
+            stdio: ["ignore", "pipe", "pipe"],
+            windowsHide: true,
+            shell: false,
+        });
         const chunks: Buffer[] = [];
         let stderr = "";
         let total = 0;
@@ -79,14 +86,14 @@ function curlViaTor(url: string, socksPort: number, maxBytes: number): Promise<{
 
         const timer = setTimeout(() => {
             killed = true;
-            child.kill("SIGKILL");
+            child.kill(IS_WIN ? undefined : "SIGKILL");
         }, FETCH_TIMEOUT_MS + 2000);
 
         child.stdout.on("data", (chunk: Buffer) => {
             total += chunk.length;
             if (total > maxBytes + 8_192) {
                 killed = true;
-                child.kill("SIGKILL");
+                child.kill(IS_WIN ? undefined : "SIGKILL");
                 return;
             }
             chunks.push(chunk);
@@ -96,7 +103,16 @@ function curlViaTor(url: string, socksPort: number, maxBytes: number): Promise<{
         });
         child.on("error", err => {
             clearTimeout(timer);
-            resolve({ ok: false, status: 0, body: Buffer.alloc(0), contentType: "", error: err.message });
+            const hint = IS_WIN
+                ? "curl.exe missing. Install curl or use a newer Windows 10+."
+                : "curl missing from PATH.";
+            resolve({
+                ok: false,
+                status: 0,
+                body: Buffer.alloc(0),
+                contentType: "",
+                error: err.message.includes("ENOENT") ? hint : err.message,
+            });
         });
         child.on("close", () => {
             clearTimeout(timer);
